@@ -5,11 +5,12 @@ import { mockPerformanceData } from '@/lib/mockData';
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const days = parseInt(searchParams.get('days') || '7', 10);
+    const startDate = searchParams.get('start_date') || undefined;
+    const endDate = searchParams.get('end_date') || undefined;
 
     // Try to fetch from Instantly.ai API first
     try {
-      const performanceData = await getPerformanceData(days);
+      const performanceData = await getPerformanceData(startDate, endDate);
       return NextResponse.json(performanceData);
     } catch (apiError) {
       // Fallback to mock data if API fails

@@ -1,11 +1,15 @@
 'use client';
 
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { mockPerformanceData } from '@/lib/mockData';
+import { PerformanceData } from '@/types/campaign';
 import { format } from 'date-fns';
 
-export default function PerformanceChart() {
-  const data = mockPerformanceData.map(item => ({
+interface PerformanceChartProps {
+  data: PerformanceData[];
+}
+
+export default function PerformanceChart({ data: performanceData }: PerformanceChartProps) {
+  const data = performanceData.map(item => ({
     ...item,
     dateFormatted: format(new Date(item.date), 'MMM dd'),
   }));
@@ -14,7 +18,7 @@ export default function PerformanceChart() {
     <div className="bg-white rounded-lg shadow p-6">
       <div className="mb-6">
         <h2 className="text-lg font-semibold text-gray-900">Campaign Performance Over Time</h2>
-        <p className="text-sm text-gray-500">Email activity for the last 7 days</p>
+        <p className="text-sm text-gray-500">Email activity for selected date range</p>
       </div>
 
       <ResponsiveContainer width="100%" height={400}>

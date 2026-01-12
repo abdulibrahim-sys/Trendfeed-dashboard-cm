@@ -57,10 +57,15 @@ async function instantlyApiCall({ endpoint, method = 'GET', params, body }: Inst
  * Get all campaigns with their analytics
  * Uses: GET /campaigns/analytics
  */
-export async function getCampaigns(): Promise<Campaign[]> {
+export async function getCampaigns(startDate?: string, endDate?: string): Promise<Campaign[]> {
   try {
+    const params: Record<string, string | undefined> = {};
+    if (startDate) params.start_date = startDate;
+    if (endDate) params.end_date = endDate;
+
     const data = await instantlyApiCall({
       endpoint: '/campaigns/analytics',
+      params,
     });
 
     return transformCampaignData(data);
@@ -74,10 +79,15 @@ export async function getCampaigns(): Promise<Campaign[]> {
  * Get dashboard overview metrics
  * Uses: GET /campaigns/analytics/overview
  */
-export async function getMetrics(): Promise<DashboardMetrics> {
+export async function getMetrics(startDate?: string, endDate?: string): Promise<DashboardMetrics> {
   try {
+    const params: Record<string, string | undefined> = {};
+    if (startDate) params.start_date = startDate;
+    if (endDate) params.end_date = endDate;
+
     const data = await instantlyApiCall({
       endpoint: '/campaigns/analytics/overview',
+      params,
     });
 
     return transformMetricsData(data);
@@ -91,18 +101,25 @@ export async function getMetrics(): Promise<DashboardMetrics> {
  * Get daily performance data for charts
  * Uses: GET /campaigns/analytics/daily
  */
-export async function getPerformanceData(days = 7): Promise<PerformanceData[]> {
+export async function getPerformanceData(startDate?: string, endDate?: string): Promise<PerformanceData[]> {
   try {
-    // Calculate date range
-    const endDate = new Date();
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
+    // Use provided dates or default to last 7 days
+    let start = startDate;
+    let end = endDate;
+
+    if (!start || !end) {
+      const today = new Date();
+      const defaultStart = new Date();
+      defaultStart.setDate(today.getDate() - 7);
+      start = defaultStart.toISOString().split('T')[0];
+      end = today.toISOString().split('T')[0];
+    }
 
     const data = await instantlyApiCall({
       endpoint: '/campaigns/analytics/daily',
       params: {
-        start_date: startDate.toISOString().split('T')[0],
-        end_date: endDate.toISOString().split('T')[0],
+        start_date: start,
+        end_date: end,
       },
     });
 

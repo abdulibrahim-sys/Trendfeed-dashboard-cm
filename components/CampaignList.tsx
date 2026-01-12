@@ -1,4 +1,4 @@
-import { mockCampaigns } from '@/lib/mockData';
+import { Campaign } from '@/types/campaign';
 import { Circle } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -28,8 +28,11 @@ function getStatusDotColor(status: string) {
   }
 }
 
-export default function CampaignList() {
-  const campaigns = mockCampaigns;
+interface CampaignListProps {
+  campaigns: Campaign[];
+}
+
+export default function CampaignList({ campaigns }: CampaignListProps) {
 
   return (
     <div className="bg-white rounded-lg shadow overflow-hidden">

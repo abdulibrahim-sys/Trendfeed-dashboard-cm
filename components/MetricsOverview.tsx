@@ -1,16 +1,14 @@
 import { Mail, MessageSquare, ThumbsUp, Calendar, Reply } from 'lucide-react';
-import { mockMetrics } from '@/lib/mockData';
+import { DashboardMetrics } from '@/types/campaign';
 
 interface MetricCardProps {
   title: string;
   value: string;
   subtitle: string;
   icon: React.ReactNode;
-  trend?: string;
-  trendUp?: boolean;
 }
 
-function MetricCard({ title, value, subtitle, icon, trend, trendUp }: MetricCardProps) {
+function MetricCard({ title, value, subtitle, icon }: MetricCardProps) {
   return (
     <div className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow">
       <div className="flex items-center justify-between">
@@ -18,11 +16,6 @@ function MetricCard({ title, value, subtitle, icon, trend, trendUp }: MetricCard
           <p className="text-sm font-medium text-gray-600">{title}</p>
           <p className="mt-2 text-3xl font-semibold text-gray-900">{value}</p>
           <p className="mt-1 text-sm text-gray-500">{subtitle}</p>
-          {trend && (
-            <p className={`mt-2 text-sm font-medium ${trendUp ? 'text-green-600' : 'text-red-600'}`}>
-              {trend}
-            </p>
-          )}
         </div>
         <div className="ml-4 p-3 bg-blue-50 rounded-lg">
           {icon}
@@ -32,8 +25,11 @@ function MetricCard({ title, value, subtitle, icon, trend, trendUp }: MetricCard
   );
 }
 
-export default function MetricsOverview() {
-  const metrics = mockMetrics;
+interface MetricsOverviewProps {
+  metrics: DashboardMetrics;
+}
+
+export default function MetricsOverview({ metrics }: MetricsOverviewProps) {
 
   return (
     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
@@ -48,24 +44,18 @@ export default function MetricsOverview() {
         value={`${metrics.avgReplyRate}%`}
         subtitle={`${metrics.totalReplies.toLocaleString()} replies`}
         icon={<MessageSquare className="h-6 w-6 text-purple-600" />}
-        trend="+0.8% vs last week"
-        trendUp={true}
       />
       <MetricCard
         title="Positive Reply Rate"
         value={`${metrics.avgPositiveReplyRate}%`}
         subtitle={`${metrics.totalPositiveReplies.toLocaleString()} positive replies`}
         icon={<ThumbsUp className="h-6 w-6 text-green-600" />}
-        trend="+1.2% vs last week"
-        trendUp={true}
       />
       <MetricCard
         title="Meetings Booked"
         value={`${metrics.avgMeetingsBookedRate}%`}
         subtitle={`${metrics.totalMeetingsBooked.toLocaleString()} meetings`}
         icon={<Calendar className="h-6 w-6 text-indigo-600" />}
-        trend="+3 this week"
-        trendUp={true}
       />
       <MetricCard
         title="Total Replies"

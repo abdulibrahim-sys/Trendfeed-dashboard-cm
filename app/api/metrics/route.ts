@@ -2,11 +2,15 @@ import { NextResponse } from 'next/server';
 import { getMetrics } from '@/lib/instantly-api';
 import { mockMetrics } from '@/lib/mockData';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const startDate = searchParams.get('start_date') || undefined;
+    const endDate = searchParams.get('end_date') || undefined;
+
     // Try to fetch from Instantly.ai API first
     try {
-      const metrics = await getMetrics();
+      const metrics = await getMetrics(startDate, endDate);
       return NextResponse.json(metrics);
     } catch (apiError) {
       // Fallback to mock data if API fails
