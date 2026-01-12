@@ -1,14 +1,18 @@
 import { NextResponse } from 'next/server';
+import { getMetrics } from '@/lib/instantly-api';
 import { mockMetrics } from '@/lib/mockData';
-// import { getMetrics } from '@/lib/instantly-api';
 
 export async function GET() {
   try {
-    // TODO: Replace mock data with actual API call when Instantly.ai credentials are configured
-    // const metrics = await getMetrics();
-    const metrics = mockMetrics;
-
-    return NextResponse.json(metrics);
+    // Try to fetch from Instantly.ai API first
+    try {
+      const metrics = await getMetrics();
+      return NextResponse.json(metrics);
+    } catch (apiError) {
+      // Fallback to mock data if API fails
+      console.warn('Falling back to mock data:', apiError);
+      return NextResponse.json(mockMetrics);
+    }
   } catch (error) {
     console.error('Error fetching metrics:', error);
     return NextResponse.json(

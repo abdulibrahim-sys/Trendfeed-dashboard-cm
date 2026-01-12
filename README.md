@@ -24,6 +24,8 @@ A modern analytics dashboard for monitoring Instantly.ai cold email campaign per
 
 - **Responsive Design**: Fully responsive interface that works on desktop, tablet, and mobile devices
 
+- **Live Data Integration**: Seamlessly connects to Instantly.ai API V2 with automatic fallback to demo data
+
 ## Tech Stack
 
 - **Framework**: Next.js 15 with App Router
@@ -35,41 +37,33 @@ A modern analytics dashboard for monitoring Instantly.ai cold email campaign per
 
 ## Getting Started
 
-### Prerequisites
+### Quick Start
 
-- Node.js 18.x or higher
-- npm or yarn package manager
-- Instantly.ai API key (optional for demo)
-
-### Installation
-
-1. Clone the repository:
-```bash
-git clone https://github.com/abdulibrahim-sys/Trendfeed-dashboard-cm.git
-cd Trendfeed-dashboard-cm
-```
-
-2. Install dependencies:
+1. **Install dependencies:**
 ```bash
 npm install
 ```
 
-3. Set up environment variables:
-```bash
-cp .env.example .env
-```
+2. **Configure your API key:**
+   - Your `.env` file is already set up with your Instantly.ai API key
+   - No additional configuration needed!
 
-Edit `.env` and add your Instantly.ai API key:
-```
-INSTANTLY_API_KEY=your_instantly_api_key_here
-```
-
-4. Run the development server:
+3. **Run the development server:**
 ```bash
 npm run dev
 ```
 
-5. Open [http://localhost:3000](http://localhost:3000) in your browser
+4. **Open the dashboard:**
+   - Navigate to [http://localhost:3000](http://localhost:3000)
+   - The dashboard will automatically fetch your campaign data from Instantly.ai
+
+📖 **For detailed setup instructions, troubleshooting, and API integration details, see [SETUP.md](./SETUP.md)**
+
+### Prerequisites
+
+- Node.js 18.x or higher
+- npm or yarn package manager
+- Instantly.ai API key (already configured in `.env`)
 
 ## Project Structure
 
