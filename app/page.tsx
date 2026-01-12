@@ -3,6 +3,9 @@
 import { useState, useEffect } from 'react';
 import DashboardHeader from '@/components/DashboardHeader';
 import DateRangeSelector from '@/components/DateRangeSelector';
+import MetricsOverview from '@/components/MetricsOverview';
+import PerformanceChart from '@/components/PerformanceChart';
+import CampaignList from '@/components/CampaignList';
 import { DateRangePreset, getDateRange } from '@/lib/dateUtils';
 import { Campaign, DashboardMetrics, PerformanceData } from '@/types/campaign';
 
