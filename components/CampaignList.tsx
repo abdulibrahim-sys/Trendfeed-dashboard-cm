@@ -52,19 +52,16 @@ export default function CampaignList() {
                 Sent
               </th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Open Rate
+                Total Replies
               </th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Reply Rate
               </th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Click Rate
+                Positive Reply Rate
               </th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Bounce Rate
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Leads
+                Meetings Booked
               </th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Last Activity
@@ -88,23 +85,20 @@ export default function CampaignList() {
                   {campaign.emailsSent.toLocaleString()}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">{campaign.openRate}%</div>
-                  <div className="text-xs text-gray-500">{campaign.opens.toLocaleString()} opens</div>
+                  <div className="text-sm font-medium text-gray-900">{campaign.replies.toLocaleString()}</div>
+                  <div className="text-xs text-gray-500">responses</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm text-gray-900">{campaign.replyRate}%</div>
                   <div className="text-xs text-gray-500">{campaign.replies.toLocaleString()} replies</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">{campaign.clickRate}%</div>
-                  <div className="text-xs text-gray-500">{campaign.clicks.toLocaleString()} clicks</div>
+                  <div className="text-sm text-gray-900">{campaign.positiveReplyRate}%</div>
+                  <div className="text-xs text-gray-500">{campaign.positiveReplies.toLocaleString()} positive</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">{campaign.bounceRate}%</div>
-                  <div className="text-xs text-gray-500">{campaign.bounces.toLocaleString()} bounces</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-blue-600">{campaign.leads}</div>
+                  <div className="text-sm text-gray-900">{campaign.meetingsBookedRate}%</div>
+                  <div className="text-xs text-gray-500">{campaign.meetingsBooked.toLocaleString()} meetings</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {format(new Date(campaign.lastActivity), 'MMM dd, yyyy')}

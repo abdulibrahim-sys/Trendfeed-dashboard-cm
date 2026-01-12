@@ -1,4 +1,4 @@
-import { Mail, MailOpen, MessageSquare, AlertCircle, MousePointerClick, UserPlus } from 'lucide-react';
+import { Mail, MessageSquare, ThumbsUp, Calendar, Reply } from 'lucide-react';
 import { mockMetrics } from '@/lib/mockData';
 
 interface MetricCardProps {
@@ -36,20 +36,12 @@ export default function MetricsOverview() {
   const metrics = mockMetrics;
 
   return (
-    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
       <MetricCard
         title="Total Sent"
         value={metrics.totalEmailsSent.toLocaleString()}
         subtitle="Emails delivered"
         icon={<Mail className="h-6 w-6 text-blue-600" />}
-      />
-      <MetricCard
-        title="Open Rate"
-        value={`${metrics.avgOpenRate}%`}
-        subtitle={`${metrics.totalOpens.toLocaleString()} opens`}
-        icon={<MailOpen className="h-6 w-6 text-green-600" />}
-        trend="+2.5% vs last week"
-        trendUp={true}
       />
       <MetricCard
         title="Reply Rate"
@@ -60,26 +52,26 @@ export default function MetricsOverview() {
         trendUp={true}
       />
       <MetricCard
-        title="Click Rate"
-        value={`${metrics.avgClickRate}%`}
-        subtitle={`${metrics.totalClicks.toLocaleString()} clicks`}
-        icon={<MousePointerClick className="h-6 w-6 text-indigo-600" />}
-      />
-      <MetricCard
-        title="Bounce Rate"
-        value={`${metrics.avgBounceRate}%`}
-        subtitle={`${metrics.totalBounces.toLocaleString()} bounces`}
-        icon={<AlertCircle className="h-6 w-6 text-red-600" />}
-        trend="-0.3% vs last week"
+        title="Positive Reply Rate"
+        value={`${metrics.avgPositiveReplyRate}%`}
+        subtitle={`${metrics.totalPositiveReplies.toLocaleString()} positive replies`}
+        icon={<ThumbsUp className="h-6 w-6 text-green-600" />}
+        trend="+1.2% vs last week"
         trendUp={true}
       />
       <MetricCard
-        title="Total Leads"
-        value={metrics.totalLeads.toLocaleString()}
-        subtitle="Qualified leads"
-        icon={<UserPlus className="h-6 w-6 text-yellow-600" />}
-        trend="+12 this week"
+        title="Meetings Booked"
+        value={`${metrics.avgMeetingsBookedRate}%`}
+        subtitle={`${metrics.totalMeetingsBooked.toLocaleString()} meetings`}
+        icon={<Calendar className="h-6 w-6 text-indigo-600" />}
+        trend="+3 this week"
         trendUp={true}
+      />
+      <MetricCard
+        title="Total Replies"
+        value={metrics.totalReplies.toLocaleString()}
+        subtitle="All responses"
+        icon={<Reply className="h-6 w-6 text-orange-600" />}
       />
     </div>
   );

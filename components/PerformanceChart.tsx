@@ -64,15 +64,6 @@ export default function PerformanceChart() {
           />
           <Line
             type="monotone"
-            dataKey="opens"
-            stroke="#10b981"
-            strokeWidth={2}
-            name="Opens"
-            dot={{ fill: '#10b981', r: 4 }}
-            activeDot={{ r: 6 }}
-          />
-          <Line
-            type="monotone"
             dataKey="replies"
             stroke="#8b5cf6"
             strokeWidth={2}
@@ -82,11 +73,20 @@ export default function PerformanceChart() {
           />
           <Line
             type="monotone"
-            dataKey="clicks"
-            stroke="#f59e0b"
+            dataKey="positiveReplies"
+            stroke="#10b981"
             strokeWidth={2}
-            name="Clicks"
-            dot={{ fill: '#f59e0b', r: 4 }}
+            name="Positive Replies"
+            dot={{ fill: '#10b981', r: 4 }}
+            activeDot={{ r: 6 }}
+          />
+          <Line
+            type="monotone"
+            dataKey="meetingsBooked"
+            stroke="#6366f1"
+            strokeWidth={2}
+            name="Meetings Booked"
+            dot={{ fill: '#6366f1', r: 4 }}
             activeDot={{ r: 6 }}
           />
         </LineChart>

@@ -6,15 +6,21 @@ A modern analytics dashboard for monitoring Instantly.ai cold email campaign per
 
 - **Real-time Metrics**: Track key performance indicators including:
   - Total emails sent
-  - Open rates
-  - Reply rates
-  - Click-through rates
-  - Bounce rates
-  - Lead conversions
+  - Reply rate (percentage and count)
+  - Positive reply rate (percentage and count)
+  - Meetings booked (percentage and count via Instantly.ai status)
+  - Total number of replies
 
 - **Performance Visualization**: Interactive charts showing campaign performance trends over time
+  - Daily email volume
+  - Reply trends
+  - Positive reply trends
+  - Meetings booked over time
 
 - **Campaign Management**: Detailed view of all campaigns with comprehensive metrics
+  - Per-campaign analytics
+  - Individual campaign performance tracking
+  - Status monitoring (active, paused, completed)
 
 - **Responsive Design**: Fully responsive interface that works on desktop, tablet, and mobile devices
 
