@@ -52,17 +52,17 @@ async function instantlyApiCall({ endpoint, method = 'GET', params, body }: Inst
 }
 
 /**
- * Fetch emails from Unibox filtered by date and status
- * Returns count of emails with "Interested" or "Meeting Booked" lead status
+ * Fetch leads from Unibox with proper status filtering
+ * Returns count of leads with "Interested" or "Meeting Booked" status
  */
 async function getAccurateLeadCounts(startDate?: string, endDate?: string): Promise<{ interested: number; meetingBooked: number }> {
   try {
+    // First, get ALL leads with replies in the date range using emails endpoint
     const params: Record<string, string | number | undefined> = {
       email_type: 'received',
       limit: 100,
     };
 
-    // Add date filters if provided
     if (startDate) {
       params.min_timestamp_created = new Date(startDate).toISOString();
     }
@@ -72,30 +72,62 @@ async function getAccurateLeadCounts(startDate?: string, endDate?: string): Prom
       params.max_timestamp_created = endDateTime.toISOString();
     }
 
-    const response = await instantlyApiCall({
+    const emailsResponse = await instantlyApiCall({
       endpoint: '/emails',
       params,
     });
 
-    const emails = response.data || response || [];
+    const emails = emailsResponse.data || emailsResponse || [];
+    console.log('📧 Fetched emails from Unibox:', emails.length);
 
+    // Extract unique lead emails from replies
+    const uniqueLeadEmails = new Set<string>();
+    emails.forEach((email: any) => {
+      const leadEmail = email.from_email || email.lead || email.lead_email;
+      if (leadEmail) {
+        uniqueLeadEmails.add(leadEmail);
+      }
+    });
+
+    console.log('👥 Unique leads with replies:', uniqueLeadEmails.size);
+
+    // Now fetch lead details to check their status
     let interestedCount = 0;
     let meetingBookedCount = 0;
 
-    // Count emails by their lead interest status
-    emails.forEach((email: any) => {
-      const status = email.i_status || email.interest_status || email.lead_interest_status;
-      const statusLabel = String(status).toLowerCase();
+    // Fetch leads in batches to check their status
+    for (const leadEmail of Array.from(uniqueLeadEmails)) {
+      try {
+        const leadResponse = await instantlyApiCall({
+          endpoint: '/leads/list',
+          method: 'POST',
+          body: {
+            filters: {
+              email: leadEmail
+            },
+            limit: 1
+          }
+        });
 
-      // Check if lead is marked as "Interested" (status = 1 or "interested")
-      if (statusLabel.includes('interest') || status === 1 || status === '1') {
-        interestedCount++;
+        const leads = leadResponse.data || leadResponse || [];
+        if (leads.length > 0) {
+          const lead = leads[0];
+          const statusLabel = String(lead.i_status_label || lead.interest_status_label || '').toLowerCase();
+
+          console.log(`Lead ${leadEmail}: status = "${statusLabel}"`);
+
+          if (statusLabel === 'interested') {
+            interestedCount++;
+          } else if (statusLabel.includes('meeting') || statusLabel === 'meeting booked') {
+            meetingBookedCount++;
+          }
+        }
+      } catch (err) {
+        console.error(`Error fetching lead ${leadEmail}:`, err);
       }
-      // Check if lead is marked as "Meeting Booked" (status = 2 or "meeting")
-      else if (statusLabel.includes('meeting') || statusLabel.includes('booked') || status === 2 || status === '2') {
-        meetingBookedCount++;
-      }
-    });
+    }
+
+    console.log(`✅ Final counts - Interested: ${interestedCount}, Meeting Booked: ${meetingBookedCount}`);
 
     return {
       interested: interestedCount,
@@ -103,7 +135,6 @@ async function getAccurateLeadCounts(startDate?: string, endDate?: string): Prom
     };
   } catch (error) {
     console.error('Error fetching accurate lead counts:', error);
-    // Return zeros if fetch fails - don't break the dashboard
     return { interested: 0, meetingBooked: 0 };
   }
 }
