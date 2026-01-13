@@ -222,7 +222,7 @@ function transformPerformanceData(apiData: any): PerformanceData[] {
   });
 }
 
-function mapCampaignStatus(status: string): 'active' | 'paused' | 'completed' {
+function mapCampaignStatus(status: string | number): 'active' | 'paused' | 'completed' {
   const statusLower = String(status).toLowerCase();
   if (statusLower.includes('active') || statusLower === '1') return 'active';
   if (statusLower.includes('pause') || statusLower === '2') return 'paused';
