@@ -3,6 +3,9 @@ import { Campaign, DashboardMetrics, PerformanceData } from '@/types/campaign';
 const INSTANTLY_API_KEY = process.env.INSTANTLY_API_KEY;
 const INSTANTLY_API_URL = process.env.INSTANTLY_API_URL || 'https://api.instantly.ai/api/v2';
 
+// Version indicator for debugging
+console.log('🚀 Instantly API Integration v2.0 - Using Unibox & Leads endpoints for accurate data');
+
 interface InstantlyApiOptions {
   endpoint: string;
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
@@ -164,26 +167,33 @@ export async function getCampaigns(startDate?: string, endDate?: string): Promis
   try {
     // Fetch all campaigns
     const campaignsList = await fetchCampaignsList();
+    console.log('📋 Fetched campaigns list:', campaignsList.length, 'campaigns');
 
     // For each campaign, fetch accurate data
     const campaignsWithMetrics = await Promise.all(
       campaignsList.map(async (campaign: any) => {
         const campaignId = campaign.id;
+        console.log(`🔍 Processing campaign: ${campaign.name} (${campaignId})`);
 
         // Fetch actual replies from Unibox
         const replies = await fetchAllEmails(campaignId, startDate, endDate);
+        console.log(`  ✉️ Replies from Unibox: ${replies.length}`);
 
         // Fetch positive replies (interested leads)
         const interestedLeads = await fetchLeadsByStatus('interested', campaignId);
+        console.log(`  ✅ Interested leads: ${interestedLeads.length}`);
 
         // Fetch meetings booked
         const meetingBookedLeads = await fetchLeadsByStatus('meeting_booked', campaignId);
+        console.log(`  📅 Meeting booked leads: ${meetingBookedLeads.length}`);
 
         // Calculate metrics from raw data
         const emailsSent = campaign.sent_count || campaign.contacted_count || 0;
         const totalReplies = replies.length;
         const positiveReplies = interestedLeads.length;
         const meetingsBooked = meetingBookedLeads.length;
+
+        console.log(`  📊 Final metrics - Sent: ${emailsSent}, Replies: ${totalReplies}, Positive: ${positiveReplies}, Meetings: ${meetingsBooked}`);
 
         return {
           id: campaignId,
