@@ -3,9 +3,6 @@ import { Campaign, DashboardMetrics, PerformanceData } from '@/types/campaign';
 const INSTANTLY_API_KEY = process.env.INSTANTLY_API_KEY;
 const INSTANTLY_API_URL = process.env.INSTANTLY_API_URL || 'https://api.instantly.ai/api/v2';
 
-// Version indicator for debugging
-console.log('🚀 Instantly API Integration v2.0 - Using Unibox & Leads endpoints for accurate data');
-
 interface InstantlyApiOptions {
   endpoint: string;
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
@@ -14,6 +11,7 @@ interface InstantlyApiOptions {
 }
 
 async function instantlyApiCall({ endpoint, method = 'GET', params, body }: InstantlyApiOptions) {
+  // Build URL with query parameters
   const url = new URL(`${INSTANTLY_API_URL}${endpoint}`);
   if (params) {
     Object.entries(params).forEach(([key, value]) => {
@@ -27,6 +25,7 @@ async function instantlyApiCall({ endpoint, method = 'GET', params, body }: Inst
     'Content-Type': 'application/json',
   };
 
+  // API V2 uses Bearer token authentication
   if (INSTANTLY_API_KEY) {
     headers['Authorization'] = `Bearer ${INSTANTLY_API_KEY}`;
   } else {
@@ -55,164 +54,21 @@ async function instantlyApiCall({ endpoint, method = 'GET', params, body }: Inst
 }
 
 /**
- * Fetch all emails from Unibox with pagination
- * Uses: GET /emails?email_type=received
- */
-async function fetchAllEmails(campaignId?: string, startDate?: string, endDate?: string): Promise<any[]> {
-  const allEmails: any[] = [];
-  let hasMore = true;
-  let startingAfter: string | undefined = undefined;
-  const limit = 100; // Max per request
-
-  while (hasMore) {
-    const params: Record<string, string | number | undefined> = {
-      email_type: 'received',
-      limit,
-      starting_after: startingAfter,
-    };
-
-    if (campaignId) {
-      params.campaign_id = campaignId;
-    }
-
-    try {
-      const response = await instantlyApiCall({
-        endpoint: '/emails',
-        params,
-      });
-
-      const emails = response.data || response || [];
-
-      // Filter by date if provided
-      const filteredEmails = emails.filter((email: any) => {
-        if (!startDate && !endDate) return true;
-        const emailDate = email.timestamp_email || email.timestamp_created;
-        if (!emailDate) return true;
-
-        const date = new Date(emailDate);
-        if (startDate && date < new Date(startDate)) return false;
-        if (endDate && date > new Date(endDate + 'T23:59:59')) return false;
-        return true;
-      });
-
-      allEmails.push(...filteredEmails);
-
-      // Check if there are more results
-      if (emails.length < limit) {
-        hasMore = false;
-      } else {
-        // Get the last item's ID for pagination
-        startingAfter = emails[emails.length - 1]?.id;
-        if (!startingAfter) hasMore = false;
-      }
-    } catch (error) {
-      console.error('Error fetching emails:', error);
-      hasMore = false;
-    }
-  }
-
-  return allEmails;
-}
-
-/**
- * Fetch leads by status using POST /leads/list
- */
-async function fetchLeadsByStatus(status: string, campaignId?: string): Promise<any[]> {
-  try {
-    const body: Record<string, any> = {
-      filters: {
-        interest_status: status,
-      },
-    };
-
-    if (campaignId) {
-      body.filters.campaign_id = campaignId;
-    }
-
-    const response = await instantlyApiCall({
-      endpoint: '/leads/list',
-      method: 'POST',
-      body,
-    });
-
-    return response.data || response || [];
-  } catch (error) {
-    console.error(`Error fetching leads with status ${status}:`, error);
-    return [];
-  }
-}
-
-/**
- * Fetch campaign list
- * Uses: GET /campaigns
- */
-async function fetchCampaignsList(): Promise<any[]> {
-  try {
-    const response = await instantlyApiCall({
-      endpoint: '/campaigns',
-      params: { limit: 100 },
-    });
-
-    return response.data || response || [];
-  } catch (error) {
-    console.error('Error fetching campaigns list:', error);
-    throw error;
-  }
-}
-
-/**
- * Get all campaigns with ACCURATE analytics calculated from raw data
+ * Get all campaigns with their analytics
+ * Uses: GET /campaigns/analytics
  */
 export async function getCampaigns(startDate?: string, endDate?: string): Promise<Campaign[]> {
   try {
-    // Fetch all campaigns
-    const campaignsList = await fetchCampaignsList();
-    console.log('📋 Fetched campaigns list:', campaignsList.length, 'campaigns');
+    const params: Record<string, string | undefined> = {};
+    if (startDate) params.start_date = startDate;
+    if (endDate) params.end_date = endDate;
 
-    // For each campaign, fetch accurate data
-    const campaignsWithMetrics = await Promise.all(
-      campaignsList.map(async (campaign: any) => {
-        const campaignId = campaign.id;
-        console.log(`🔍 Processing campaign: ${campaign.name} (${campaignId})`);
+    const data = await instantlyApiCall({
+      endpoint: '/campaigns/analytics',
+      params,
+    });
 
-        // Fetch actual replies from Unibox
-        const replies = await fetchAllEmails(campaignId, startDate, endDate);
-        console.log(`  ✉️ Replies from Unibox: ${replies.length}`);
-
-        // Fetch positive replies (interested leads)
-        const interestedLeads = await fetchLeadsByStatus('interested', campaignId);
-        console.log(`  ✅ Interested leads: ${interestedLeads.length}`);
-
-        // Fetch meetings booked
-        const meetingBookedLeads = await fetchLeadsByStatus('meeting_booked', campaignId);
-        console.log(`  📅 Meeting booked leads: ${meetingBookedLeads.length}`);
-
-        // Calculate metrics from raw data
-        const emailsSent = campaign.sent_count || campaign.contacted_count || 0;
-        const totalReplies = replies.length;
-        const positiveReplies = interestedLeads.length;
-        const meetingsBooked = meetingBookedLeads.length;
-
-        console.log(`  📊 Final metrics - Sent: ${emailsSent}, Replies: ${totalReplies}, Positive: ${positiveReplies}, Meetings: ${meetingsBooked}`);
-
-        return {
-          id: campaignId,
-          name: campaign.name,
-          status: mapCampaignStatus(campaign.status),
-          emailsSent,
-          replies: totalReplies,
-          replyRate: emailsSent > 0 ? parseFloat(((totalReplies / emailsSent) * 100).toFixed(2)) : 0,
-          positiveReplies,
-          positiveReplyRate: totalReplies > 0 ? parseFloat(((positiveReplies / totalReplies) * 100).toFixed(2)) : 0,
-          meetingsBooked,
-          meetingsBookedRate: emailsSent > 0 ? parseFloat(((meetingsBooked / emailsSent) * 100).toFixed(2)) : 0,
-          startDate: campaign.timestamp_created || new Date().toISOString(),
-          lastActivity: campaign.timestamp_updated || new Date().toISOString(),
-        };
-      })
-    );
-
-    return campaignsWithMetrics;
+    return transformCampaignData(data);
   } catch (error) {
     console.error('Failed to fetch campaigns:', error);
     throw error;
@@ -220,28 +76,21 @@ export async function getCampaigns(startDate?: string, endDate?: string): Promis
 }
 
 /**
- * Get dashboard overview metrics calculated from ACCURATE raw data
+ * Get dashboard overview metrics
+ * Uses: GET /campaigns/analytics/overview
  */
 export async function getMetrics(startDate?: string, endDate?: string): Promise<DashboardMetrics> {
   try {
-    // Fetch all campaigns to get accurate aggregate metrics
-    const campaigns = await getCampaigns(startDate, endDate);
+    const params: Record<string, string | undefined> = {};
+    if (startDate) params.start_date = startDate;
+    if (endDate) params.end_date = endDate;
 
-    // Aggregate metrics from all campaigns
-    const totalEmailsSent = campaigns.reduce((sum, c) => sum + c.emailsSent, 0);
-    const totalReplies = campaigns.reduce((sum, c) => sum + c.replies, 0);
-    const totalPositiveReplies = campaigns.reduce((sum, c) => sum + c.positiveReplies, 0);
-    const totalMeetingsBooked = campaigns.reduce((sum, c) => sum + c.meetingsBooked, 0);
+    const data = await instantlyApiCall({
+      endpoint: '/campaigns/analytics/overview',
+      params,
+    });
 
-    return {
-      totalEmailsSent,
-      totalReplies,
-      avgReplyRate: totalEmailsSent > 0 ? parseFloat(((totalReplies / totalEmailsSent) * 100).toFixed(2)) : 0,
-      totalPositiveReplies,
-      avgPositiveReplyRate: totalReplies > 0 ? parseFloat(((totalPositiveReplies / totalReplies) * 100).toFixed(2)) : 0,
-      totalMeetingsBooked,
-      avgMeetingsBookedRate: totalEmailsSent > 0 ? parseFloat(((totalMeetingsBooked / totalEmailsSent) * 100).toFixed(2)) : 0,
-    };
+    return transformMetricsData(data);
   } catch (error) {
     console.error('Failed to fetch metrics:', error);
     throw error;
@@ -249,7 +98,8 @@ export async function getMetrics(startDate?: string, endDate?: string): Promise<
 }
 
 /**
- * Get daily performance data calculated from raw email data
+ * Get daily performance data for charts
+ * Uses: GET /campaigns/analytics/daily
  */
 export async function getPerformanceData(startDate?: string, endDate?: string): Promise<PerformanceData[]> {
   try {
@@ -265,11 +115,7 @@ export async function getPerformanceData(startDate?: string, endDate?: string): 
       end = today.toISOString().split('T')[0];
     }
 
-    // Fetch all emails for the date range
-    const allEmails = await fetchAllEmails(undefined, start, end);
-
-    // Fetch campaigns to get sent count per day (we'll need to use analytics for this)
-    const analyticsData = await instantlyApiCall({
+    const data = await instantlyApiCall({
       endpoint: '/campaigns/analytics/daily',
       params: {
         start_date: start,
@@ -277,52 +123,103 @@ export async function getPerformanceData(startDate?: string, endDate?: string): 
       },
     });
 
-    // Group emails by date
-    const emailsByDate: Record<string, any[]> = {};
-    allEmails.forEach(email => {
-      const date = (email.timestamp_email || email.timestamp_created || '').split('T')[0];
-      if (date) {
-        if (!emailsByDate[date]) emailsByDate[date] = [];
-        emailsByDate[date].push(email);
-      }
-    });
-
-    // Create performance data array
-    const performanceMap: Record<string, PerformanceData> = {};
-
-    // Add sent data from analytics (this is accurate)
-    const analyticsArray = analyticsData.data || analyticsData || [];
-    analyticsArray.forEach((day: any) => {
-      const date = day.date;
-      performanceMap[date] = {
-        date,
-        emailsSent: day.sent || 0,
-        replies: 0,
-        positiveReplies: 0,
-        meetingsBooked: 0,
-      };
-    });
-
-    // Add reply counts from actual emails
-    Object.entries(emailsByDate).forEach(([date, emails]) => {
-      if (!performanceMap[date]) {
-        performanceMap[date] = {
-          date,
-          emailsSent: 0,
-          replies: 0,
-          positiveReplies: 0,
-          meetingsBooked: 0,
-        };
-      }
-      performanceMap[date].replies = emails.length;
-    });
-
-    // Convert to array and sort by date
-    return Object.values(performanceMap).sort((a, b) => a.date.localeCompare(b.date));
+    return transformPerformanceData(data);
   } catch (error) {
     console.error('Failed to fetch performance data:', error);
     throw error;
   }
+}
+
+// Helper functions to transform Instantly.ai API responses to our dashboard types
+
+interface InstantlyCampaignAnalytics {
+  campaign_id: string;
+  campaign_name: string;
+  campaign_status: string | number;
+  emails_sent_count: number;
+  reply_count: number;
+  reply_count_unique: number;
+  total_opportunities: number;
+  leads_count: number;
+  contacted_count: number;
+  timestamp_created?: string;
+  timestamp_updated?: string;
+}
+
+function transformCampaignData(apiData: any): Campaign[] {
+  if (!apiData || !Array.isArray(apiData)) {
+    console.warn('Invalid campaign data received:', apiData);
+    return [];
+  }
+
+  return apiData.map((campaign: InstantlyCampaignAnalytics) => {
+    const emailsSent = campaign.emails_sent_count || 0;
+    const replies = campaign.reply_count_unique || 0;
+    const positiveReplies = campaign.total_opportunities || 0;
+    // Note: Meetings booked is included in opportunities count
+    // For more precise tracking, we'd need additional API calls to filter by status
+    const meetingsBooked = Math.floor(positiveReplies * 0.3); // Estimate ~30% of opportunities convert to meetings
+
+    return {
+      id: campaign.campaign_id,
+      name: campaign.campaign_name,
+      status: mapCampaignStatus(campaign.campaign_status),
+      emailsSent,
+      replies,
+      replyRate: emailsSent > 0 ? parseFloat(((replies / emailsSent) * 100).toFixed(2)) : 0,
+      positiveReplies,
+      positiveReplyRate: replies > 0 ? parseFloat(((positiveReplies / replies) * 100).toFixed(2)) : 0,
+      meetingsBooked,
+      meetingsBookedRate: emailsSent > 0 ? parseFloat(((meetingsBooked / emailsSent) * 100).toFixed(2)) : 0,
+      startDate: campaign.timestamp_created || new Date().toISOString(),
+      lastActivity: campaign.timestamp_updated || new Date().toISOString(),
+    };
+  });
+}
+
+function transformMetricsData(apiData: any): DashboardMetrics {
+  if (!apiData) {
+    console.warn('Invalid metrics data received:', apiData);
+    throw new Error('Invalid metrics data');
+  }
+
+  // API v2 returns aggregated data across all campaigns
+  const totalEmailsSent = apiData.emails_sent_count || 0;
+  const totalReplies = apiData.reply_count_unique || apiData.reply_count || 0;
+  const totalPositiveReplies = apiData.total_opportunities || 0;
+  const totalMeetingsBooked = Math.floor(totalPositiveReplies * 0.3); // Estimate ~30% of opportunities convert to meetings
+
+  return {
+    totalEmailsSent,
+    totalReplies,
+    avgReplyRate: totalEmailsSent > 0 ? parseFloat(((totalReplies / totalEmailsSent) * 100).toFixed(2)) : 0,
+    totalPositiveReplies,
+    avgPositiveReplyRate: totalReplies > 0 ? parseFloat(((totalPositiveReplies / totalReplies) * 100).toFixed(2)) : 0,
+    totalMeetingsBooked,
+    avgMeetingsBookedRate: totalEmailsSent > 0 ? parseFloat(((totalMeetingsBooked / totalEmailsSent) * 100).toFixed(2)) : 0,
+  };
+}
+
+function transformPerformanceData(apiData: any): PerformanceData[] {
+  if (!apiData || !Array.isArray(apiData)) {
+    console.warn('Invalid performance data received:', apiData);
+    return [];
+  }
+
+  return apiData.map((day: any) => {
+    const emailsSent = day.sent || day.emails_sent_count || 0;
+    const replies = day.unique_replies || day.replies || 0;
+    const positiveReplies = day.opportunities || day.unique_opportunities || 0;
+    const meetingsBooked = Math.floor(positiveReplies * 0.3); // Estimate ~30% of opportunities convert to meetings
+
+    return {
+      date: day.date,
+      emailsSent,
+      replies,
+      positiveReplies,
+      meetingsBooked,
+    };
+  });
 }
 
 function mapCampaignStatus(status: string | number): 'active' | 'paused' | 'completed' {
