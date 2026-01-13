@@ -52,12 +52,38 @@ async function instantlyApiCall({ endpoint, method = 'GET', params, body }: Inst
 }
 
 /**
- * Fetch leads from Unibox with proper status filtering
- * Returns count of leads with "Interested" or "Meeting Booked" status
+ * Get active campaign IDs
+ */
+async function getActiveCampaignIds(): Promise<string[]> {
+  try {
+    const response = await instantlyApiCall({
+      endpoint: '/campaigns',
+      params: { status: 'active', limit: 100 },
+    });
+
+    const campaigns = response.data || response || [];
+    return campaigns.map((c: any) => c.id);
+  } catch (error) {
+    console.error('Error fetching active campaigns:', error);
+    return [];
+  }
+}
+
+/**
+ * Fetch leads with specific status from Unibox
+ * Only looks at ACTIVE campaigns
  */
 async function getAccurateLeadCounts(startDate?: string, endDate?: string): Promise<{ interested: number; meetingBooked: number }> {
   try {
-    // First, get ALL leads with replies in the date range using emails endpoint
+    // Get active campaign IDs
+    const activeCampaignIds = await getActiveCampaignIds();
+    console.log('🎯 Active campaigns:', activeCampaignIds.length);
+
+    if (activeCampaignIds.length === 0) {
+      return { interested: 0, meetingBooked: 0 };
+    }
+
+    // Fetch all emails from Unibox in date range
     const params: Record<string, string | number | undefined> = {
       email_type: 'received',
       limit: 100,
@@ -78,56 +104,31 @@ async function getAccurateLeadCounts(startDate?: string, endDate?: string): Prom
     });
 
     const emails = emailsResponse.data || emailsResponse || [];
-    console.log('📧 Fetched emails from Unibox:', emails.length);
+    console.log('📧 Total emails in date range:', emails.length);
 
-    // Extract unique lead emails from replies
-    const uniqueLeadEmails = new Set<string>();
-    emails.forEach((email: any) => {
-      const leadEmail = email.from_email || email.lead || email.lead_email;
-      if (leadEmail) {
-        uniqueLeadEmails.add(leadEmail);
-      }
+    // Filter emails to only those from active campaigns
+    const activeEmails = emails.filter((email: any) => {
+      const campaignId = email.campaign_id || email.campaign;
+      return campaignId && activeCampaignIds.includes(campaignId);
     });
 
-    console.log('👥 Unique leads with replies:', uniqueLeadEmails.size);
+    console.log('📧 Emails from active campaigns:', activeEmails.length);
 
-    // Now fetch lead details to check their status
+    // Count by interest status
     let interestedCount = 0;
     let meetingBookedCount = 0;
 
-    // Fetch leads in batches to check their status
-    for (const leadEmail of Array.from(uniqueLeadEmails)) {
-      try {
-        const leadResponse = await instantlyApiCall({
-          endpoint: '/leads/list',
-          method: 'POST',
-          body: {
-            filters: {
-              email: leadEmail
-            },
-            limit: 1
-          }
-        });
+    activeEmails.forEach((email: any) => {
+      const statusLabel = String(email.i_status_label || email.interest_status_label || email.i_status || '').toLowerCase();
 
-        const leads = leadResponse.data || leadResponse || [];
-        if (leads.length > 0) {
-          const lead = leads[0];
-          const statusLabel = String(lead.i_status_label || lead.interest_status_label || '').toLowerCase();
-
-          console.log(`Lead ${leadEmail}: status = "${statusLabel}"`);
-
-          if (statusLabel === 'interested') {
-            interestedCount++;
-          } else if (statusLabel.includes('meeting') || statusLabel === 'meeting booked') {
-            meetingBookedCount++;
-          }
-        }
-      } catch (err) {
-        console.error(`Error fetching lead ${leadEmail}:`, err);
+      if (statusLabel === 'interested') {
+        interestedCount++;
+      } else if (statusLabel.includes('meeting') || statusLabel === 'meeting booked') {
+        meetingBookedCount++;
       }
-    }
+    });
 
-    console.log(`✅ Final counts - Interested: ${interestedCount}, Meeting Booked: ${meetingBookedCount}`);
+    console.log(`✅ Interested: ${interestedCount}, Meeting Booked: ${meetingBookedCount}`);
 
     return {
       interested: interestedCount,
